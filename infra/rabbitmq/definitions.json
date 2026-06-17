@@ -1,0 +1,95 @@
+{
+  "vhosts": [
+    { "name": "/" }
+  ],
+  "users": [
+    {
+      "name": "seraph",
+      "password_hash": "",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": "administrator"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "seraph",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "seraph.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "seraph.dlq",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "auth.events",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "seraph.dlq"
+      }
+    },
+    {
+      "name": "payments.events",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "seraph.dlq"
+      }
+    },
+    {
+      "name": "seraph.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "seraph.events",
+      "vhost": "/",
+      "destination": "auth.events",
+      "destination_type": "queue",
+      "routing_key": "auth.*",
+      "arguments": {}
+    },
+    {
+      "source": "seraph.events",
+      "vhost": "/",
+      "destination": "payments.events",
+      "destination_type": "queue",
+      "routing_key": "payments.*",
+      "arguments": {}
+    },
+    {
+      "source": "seraph.dlq",
+      "vhost": "/",
+      "destination": "seraph.dlq",
+      "destination_type": "queue",
+      "routing_key": "#",
+      "arguments": {}
+    }
+  ]
+}

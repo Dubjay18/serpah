@@ -1,0 +1,38 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: Aggregated API documentation for all Seraph microservices
+  title: Seraph API Gateway
+  version: "1.0"
+paths:
+  /docs/openapi.json:
+    get:
+      description: Returns a merged OpenAPI 3.0 spec from all services
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Aggregated OpenAPI spec
+      tags:
+      - docs
+  /gateway/health:
+    get:
+      description: Returns the health status of the API gateway
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Gateway health check
+      tags:
+      - gateway
+swagger: "2.0"

@@ -1,0 +1,10 @@
+go 1.25.0
+
+use (
+	./services/accounts
+	./services/auth
+	./services/gateway
+	./services/ledger
+	./services/payments
+	./shared
+)

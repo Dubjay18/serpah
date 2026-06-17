@@ -1,0 +1,24 @@
+basePath: /
+host: localhost:8083
+info:
+  contact: {}
+  description: Financial ledger service
+  title: Seraph Ledger Service
+  version: "1.0"
+paths:
+  /ledger/health:
+    get:
+      description: Returns the health status of the ledger service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - ledger
+swagger: "2.0"

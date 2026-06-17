@@ -1,0 +1,54 @@
+# Binaries and Executables
+# Go binaries compiled in place
+**/cmd/server/server
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.prof
+*.cov
+
+# Build directories (optional but good practice)
+/bin/
+/dist/
+/out/
+
+# Test and coverage artifacts
+*.out
+cover.out
+coverage.txt
+
+# Environment files
+.env
+.env.local
+.env.*.local
+# Track the example env file
+!.env.example
+
+# Secrets, private keys and certificates
+/keys/private.pem
+*.key
+*.pem
+# Allow public pem if needed, or ignore all pem files by default except public.pem
+!/keys/public.pem
+
+# IDE / Editor configurations
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

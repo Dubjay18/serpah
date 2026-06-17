@@ -1,0 +1,90 @@
+version: "3.9"
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: seraph
+      POSTGRES_PASSWORD: seraph_dev
+      POSTGRES_DB: seraph
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/seed.sql:/docker-entrypoint-initdb.d/seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U seraph"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: seraph
+      RABBITMQ_DEFAULT_PASS: seraph_dev
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    ports: ["8080:8080"]
+    env_file: .env
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  auth:
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+    ports: ["8081:8081"]
+    env_file: .env
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  accounts:
+    build:
+      context: .
+      dockerfile: services/accounts/Dockerfile
+    ports: ["8082:8082"]
+    env_file: .env
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  ledger:
+    build:
+      context: .
+      dockerfile: services/ledger/Dockerfile
+    ports: ["8083:8083"]
+    env_file: .env
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  payments:
+    build:
+      context: .
+      dockerfile: services/payments/Dockerfile
+    ports: ["8084:8084"]
+    env_file: .env
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+volumes:
+  postgres_data:
+  rabbitmq_data:

@@ -1,0 +1,199 @@
+basePath: /
+definitions:
+  handler.LoginRequest:
+    properties:
+      email:
+        example: jane@example.com
+        type: string
+      password:
+        example: s3cr3t
+        type: string
+    type: object
+  handler.LogoutRequest:
+    properties:
+      refresh_token:
+        example: eyJhbGc...
+        type: string
+    type: object
+  handler.RefreshRequest:
+    properties:
+      refresh_token:
+        example: eyJhbGc...
+        type: string
+    type: object
+  handler.RegisterRequest:
+    properties:
+      email:
+        example: jane@example.com
+        type: string
+      first_name:
+        example: Jane
+        type: string
+      last_name:
+        example: Doe
+        type: string
+      password:
+        example: s3cr3t
+        type: string
+    type: object
+host: localhost:8081
+info:
+  contact: {}
+  description: Authentication and authorization service
+  title: Seraph Auth Service
+  version: "1.0"
+paths:
+  /auth/health:
+    get:
+      description: Returns the health status of the auth service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and returns access + refresh tokens
+      parameters:
+      - description: Login payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Revokes the provided refresh token
+      parameters:
+      - description: Logout payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Logout
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Issues a new access + refresh token pair given a valid refresh
+        token
+      parameters:
+      - description: Refresh payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Refresh tokens
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account with email and password
+      parameters:
+      - description: Registration payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - auth
+swagger: "2.0"
