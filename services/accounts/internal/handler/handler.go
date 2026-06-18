@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -17,6 +19,12 @@ import (
 	"github.com/Dubjay18/seraph/shared/middleware"
 	"github.com/Dubjay18/seraph/shared/money"
 )
+
+var rxUUID = regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$")
+
+func isValidUUID(uuid string) bool {
+	return rxUUID.MatchString(uuid)
+}
 
 // Handler holds HTTP dependencies for the accounts domain.
 type Handler struct {
@@ -73,6 +81,12 @@ func (h *Handler) CreateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := req.Validate(); err != nil {
+		h.log.Warn("invalid create account request", zap.Error(err))
+		h.writeError(w, apperrors.New(apperrors.CodeInvalidInput, err.Error()))
+		return
+	}
+
 	acc, err := h.svc.CreateAccount(r.Context(), callerID, repository.AccountType(req.AccountType), money.Currency(req.Currency))
 	if err != nil {
 		h.log.Warn("account creation failed", zap.String("owner_id", callerID), zap.Error(err))
@@ -112,6 +126,10 @@ func (h *Handler) GetAccount(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, apperrors.New(apperrors.CodeInvalidInput, "account id is required"))
 		return
 	}
+	if !isValidUUID(accountID) {
+		h.writeError(w, apperrors.New(apperrors.CodeInvalidInput, "invalid account id format: must be a UUID"))
+		return
+	}
 
 	acc, balance, err := h.svc.GetAccountWithBalance(r.Context(), accountID, callerID)
 	if err != nil {
@@ -146,6 +164,12 @@ func (h *Handler) ListAccounts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cursor := r.URL.Query().Get("cursor")
+	if cursor != "" {
+		if _, err := base64.RawURLEncoding.DecodeString(cursor); err != nil {
+			h.writeError(w, apperrors.New(apperrors.CodeInvalidInput, "invalid pagination cursor"))
+			return
+		}
+	}
 
 	limit := 20
 	if l := r.URL.Query().Get("limit"); l != "" {
@@ -213,6 +237,10 @@ func (h *Handler) CloseAccount(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, apperrors.New(apperrors.CodeInvalidInput, "account id is required"))
 		return
 	}
+	if !isValidUUID(accountID) {
+		h.writeError(w, apperrors.New(apperrors.CodeInvalidInput, "invalid account id format: must be a UUID"))
+		return
+	}
 
 	if err := h.svc.CloseAccount(r.Context(), accountID, callerID); err != nil {
 		h.log.Warn("close account failed", zap.String("account_id", accountID), zap.Error(err))
@@ -253,6 +281,10 @@ func (h *Handler) GetStatement(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, apperrors.New(apperrors.CodeInvalidInput, "account id is required"))
 		return
 	}
+	if !isValidUUID(accountID) {
+		h.writeError(w, apperrors.New(apperrors.CodeInvalidInput, "invalid account id format: must be a UUID"))
+		return
+	}
 
 	// Parse optional date range.
 	var from, to *time.Time
@@ -273,7 +305,18 @@ func (h *Handler) GetStatement(w http.ResponseWriter, r *http.Request) {
 		to = &t
 	}
 
+	if from != nil && to != nil && from.After(*to) {
+		h.writeError(w, apperrors.New(apperrors.CodeInvalidInput, "'from' date cannot be after 'to' date"))
+		return
+	}
+
 	cursor := r.URL.Query().Get("cursor")
+	if cursor != "" {
+		if _, err := base64.RawURLEncoding.DecodeString(cursor); err != nil {
+			h.writeError(w, apperrors.New(apperrors.CodeInvalidInput, "invalid pagination cursor"))
+			return
+		}
+	}
 
 	limit := 20
 	if l := r.URL.Query().Get("limit"); l != "" {

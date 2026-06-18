@@ -5,9 +5,12 @@
 package dto
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Dubjay18/seraph/shared/money"
+	"github.com/Dubjay18/seraph/shared/types"
 )
 
 // ─── Request types ────────────────────────────────────────────────────────────
@@ -18,6 +21,28 @@ import (
 type CreateAccountRequest struct {
 	AccountType string `json:"account_type"`
 	Currency    string `json:"currency"`
+}
+
+// Validate checks that the account type and currency are valid.
+func (r *CreateAccountRequest) Validate() error {
+	if r.AccountType == "" {
+		return errors.New("account_type is required")
+	}
+	if r.Currency == "" {
+		return errors.New("currency is required")
+	}
+
+	switch r.AccountType {
+	case "CHECKING", "SAVINGS", "FLOAT":
+	default:
+		return fmt.Errorf("invalid account_type %q: must be one of CHECKING, SAVINGS, FLOAT", r.AccountType)
+	}
+
+	if err := money.Currency(r.Currency).Validate(); err != nil {
+		return fmt.Errorf("invalid currency: %w", err)
+	}
+
+	return nil
 }
 
 // ─── Response types ───────────────────────────────────────────────────────────
@@ -38,11 +63,7 @@ type AccountResponse struct {
 
 // ListAccountsResponse wraps a page of accounts with cursor-based pagination
 // metadata for GET /accounts.
-type ListAccountsResponse struct {
-	Data       []AccountResponse `json:"data"`
-	NextCursor string            `json:"next_cursor,omitempty"` // opaque; empty when no more pages
-	HasMore    bool              `json:"has_more"`
-}
+type ListAccountsResponse = types.PaginatedResponse[AccountResponse]
 
 // ─── Statement types ─────────────────────────────────────────────────────────
 
@@ -58,8 +79,4 @@ type LedgerEntryResponse struct {
 
 // StatementResponse wraps a paginated slice of ledger entries for
 // GET /accounts/:id/statement.
-type StatementResponse struct {
-	Data       []LedgerEntryResponse `json:"data"`
-	NextCursor string                `json:"next_cursor,omitempty"`
-	HasMore    bool                  `json:"has_more"`
-}
+type StatementResponse = types.PaginatedResponse[LedgerEntryResponse]
