@@ -92,10 +92,12 @@ func main() {
 	lc.Start(consumerCtx)
 	log.Info("ledger event consumers started")
 
-	h := handler.New()
+	h := handler.New(ledgerSvc, log)
 
 	r := chi.NewRouter()
 	r.Get("/ledger/health", h.Health)
+	r.Get("/ledger/accounts/{id}/balance", h.GetBalance)
+	r.Get("/ledger/accounts/{id}/entries", h.GetEntries)
 
 	r.Get("/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		doc, err := swaggoSwagger.ReadDoc()

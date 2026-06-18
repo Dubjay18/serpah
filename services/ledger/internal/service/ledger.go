@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/Dubjay18/seraph/shared/money"
 )
@@ -40,6 +41,17 @@ type PostRequest struct {
 	Entries        []Entry
 }
 
+// LedgerEntry is the service-layer view of a single ledger entry.
+type LedgerEntry struct {
+	ID            string
+	TransactionID string
+	AccountID     string
+	EntryType     string
+	Amount        int64
+	Currency      string
+	CreatedAt     time.Time
+}
+
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 // LedgerRepository is the data-access interface for the ledger service.
@@ -51,6 +63,10 @@ type LedgerRepository interface {
 	IsIdempotencyKeyUsed(ctx context.Context, key string) (bool, error)
 	// GetBalance returns the cached balance for an account in a given currency.
 	GetBalance(ctx context.Context, accountID string, currency money.Currency) (money.Money, error)
+	// GetBalanceAny returns the balance for the most recently active currency.
+	GetBalanceAny(ctx context.Context, accountID string) (money.Money, error)
+	// GetEntries returns a cursor-paginated list of ledger entries for an account.
+	GetEntries(ctx context.Context, accountID string, from, to *time.Time, cursor string, limit int) ([]LedgerEntry, string, error)
 }
 
 // LedgerService is the core accounting engine of Seraph.
@@ -145,4 +161,24 @@ func (s *LedgerService) GetBalance(ctx context.Context, accountID string, curren
 		return money.Money{}, fmt.Errorf("ledger: %w", err)
 	}
 	return s.repo.GetBalance(ctx, accountID, currency)
+}
+
+// GetBalanceAny returns the balance for the most recently active currency of the account.
+// Intended for the external HTTP balance endpoint where the caller doesn't specify currency.
+func (s *LedgerService) GetBalanceAny(ctx context.Context, accountID string) (money.Money, error) {
+	return s.repo.GetBalanceAny(ctx, accountID)
+}
+
+// GetEntries returns a cursor-paginated list of ledger entries for an account.
+func (s *LedgerService) GetEntries(
+	ctx context.Context,
+	accountID string,
+	from, to *time.Time,
+	cursor string,
+	limit int,
+) ([]LedgerEntry, string, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	return s.repo.GetEntries(ctx, accountID, from, to, cursor, limit)
 }

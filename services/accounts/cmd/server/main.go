@@ -25,6 +25,7 @@ import (
 	"github.com/Dubjay18/seraph/services/accounts/internal/repository"
 	"github.com/Dubjay18/seraph/services/accounts/internal/service"
 	"github.com/Dubjay18/seraph/shared/rabbitmq"
+	sharedmiddleware "github.com/Dubjay18/seraph/shared/middleware"
 )
 
 // @title			Seraph Accounts Service
@@ -110,7 +111,27 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Get("/accounts/health", h.Health)
-	r.Post("/accounts", h.CreateAccount)
+
+	// Middleware: extract X-User-ID header (set by auth-validated gateway) and
+	// store it in context so handlers can call middleware.UserIDFromContext.
+	injectUserID := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if uid := r.Header.Get("X-User-ID"); uid != "" {
+				r = r.WithContext(sharedmiddleware.WithUserID(r.Context(), uid))
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+
+	r.Group(func(r chi.Router) {
+		r.Use(injectUserID)
+		r.Post("/accounts", h.CreateAccount)
+		r.Get("/accounts", h.ListAccounts)
+		r.Get("/accounts/{id}", h.GetAccount)
+		r.Delete("/accounts/{id}", h.CloseAccount)
+		r.Get("/accounts/{id}/statement", h.GetStatement)
+	})
+
 
 	r.Get("/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		doc, err := swaggoSwagger.ReadDoc()

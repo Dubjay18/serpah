@@ -1,12 +1,41 @@
 package middleware
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
+
+// contextKey is an unexported type for context keys defined in this package.
+// Using a distinct type prevents collisions with keys from other packages.
+type contextKey string
+
+// ContextKeyUserID is the context key under which the authenticated user's ID
+// (JWT subject) is stored by any JWT-validating middleware or gateway.
+const ContextKeyUserID contextKey = "user_id"
+
+// WithUserID returns a new context that carries the given userID.
+func WithUserID(ctx context.Context, userID string) context.Context {
+	return context.WithValue(ctx, ContextKeyUserID, userID)
+}
+
+// UserIDFromContext extracts the authenticated user ID from ctx.
+// Returns an error if the key is absent or holds an unexpected type.
+func UserIDFromContext(ctx context.Context) (string, error) {
+	v := ctx.Value(ContextKeyUserID)
+	if v == nil {
+		return "", fmt.Errorf("middleware: user_id not found in context")
+	}
+	id, ok := v.(string)
+	if !ok || id == "" {
+		return "", fmt.Errorf("middleware: user_id in context is not a valid string")
+	}
+	return id, nil
+}
 
 // RequestID injects a unique X-Request-ID header into every request.
 func RequestID(next http.Handler) http.Handler {

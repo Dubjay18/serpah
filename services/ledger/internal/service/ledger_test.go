@@ -3,6 +3,7 @@ package service_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/Dubjay18/seraph/services/ledger/internal/service"
 	"github.com/Dubjay18/seraph/shared/money"
@@ -27,6 +28,14 @@ func (s *stubRepo) IsIdempotencyKeyUsed(_ context.Context, _ string) (bool, erro
 
 func (s *stubRepo) GetBalance(_ context.Context, _ string, _ money.Currency) (money.Money, error) {
 	return s.balance, nil
+}
+
+func (s *stubRepo) GetBalanceAny(_ context.Context, _ string) (money.Money, error) {
+	return s.balance, nil
+}
+
+func (s *stubRepo) GetEntries(_ context.Context, _ string, _, _ *time.Time, _ string, _ int) ([]service.LedgerEntry, string, error) {
+	return nil, "", nil
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

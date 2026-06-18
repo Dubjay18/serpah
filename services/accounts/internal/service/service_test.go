@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Dubjay18/seraph/services/accounts/internal/dto"
 	"github.com/Dubjay18/seraph/services/accounts/internal/repository"
 	"github.com/Dubjay18/seraph/services/accounts/internal/service"
 	apperrors "github.com/Dubjay18/seraph/shared/errors"
@@ -68,6 +69,10 @@ func (m *mockRepo) ListAccountsByOwner(ctx context.Context, ownerID string) ([]r
 	return nil, nil
 }
 
+func (m *mockRepo) ListAccountsByOwnerCursor(ctx context.Context, ownerID string, cursor string, limit int) ([]repository.Account, error) {
+	return nil, nil
+}
+
 func (m *mockRepo) ChangeAccountStatus(ctx context.Context, accountID string, newStatus repository.AccountStatus) error {
 	if m.statusErr != nil {
 		return m.statusErr
@@ -95,6 +100,10 @@ func (m *mockLedger) GetBalance(ctx context.Context, accountID string) (money.Mo
 		return money.Money{}, m.err
 	}
 	return m.balance, nil
+}
+
+func (m *mockLedger) GetEntries(ctx context.Context, accountID string, from, to *time.Time, cursor string, limit int) ([]dto.LedgerEntryResponse, string, error) {
+	return nil, "", nil
 }
 
 type mockPublisher struct {
@@ -199,7 +208,7 @@ func TestCloseAccount_Success(t *testing.T) {
 	pub := &mockPublisher{}
 	svc := service.New(repo, val, ledger, pub)
 
-	err := svc.CloseAccount(context.Background(), "acc-abc")
+	err := svc.CloseAccount(context.Background(), "acc-abc", "owner-123")
 	if err != nil {
 		t.Fatalf("expected no error closing account, got: %v", err)
 	}
@@ -216,8 +225,9 @@ func TestCloseAccount_Success(t *testing.T) {
 func TestCloseAccount_AlreadyClosedIdempotent(t *testing.T) {
 	repo := &mockRepo{
 		getAccount: &repository.Account{
-			ID:     "acc-abc",
-			Status: repository.AccountStatusClosed,
+			ID:      "acc-abc",
+			OwnerID: "any-owner",
+			Status:  repository.AccountStatusClosed,
 		},
 	}
 	val := &mockValidator{}
@@ -225,7 +235,7 @@ func TestCloseAccount_AlreadyClosedIdempotent(t *testing.T) {
 	pub := &mockPublisher{}
 	svc := service.New(repo, val, ledger, pub)
 
-	err := svc.CloseAccount(context.Background(), "acc-abc")
+	err := svc.CloseAccount(context.Background(), "acc-abc", "any-owner")
 	if err != nil {
 		t.Fatalf("expected no error closing already closed account, got: %v", err)
 	}
@@ -243,6 +253,7 @@ func TestCloseAccount_NonZeroBalanceRejected(t *testing.T) {
 	repo := &mockRepo{
 		getAccount: &repository.Account{
 			ID:       "acc-abc",
+			OwnerID:  "owner-123",
 			Status:   repository.AccountStatusActive,
 			Currency: money.USD,
 		},
@@ -254,7 +265,7 @@ func TestCloseAccount_NonZeroBalanceRejected(t *testing.T) {
 	pub := &mockPublisher{}
 	svc := service.New(repo, val, ledger, pub)
 
-	err := svc.CloseAccount(context.Background(), "acc-abc")
+	err := svc.CloseAccount(context.Background(), "acc-abc", "owner-123")
 	if err == nil {
 		t.Fatal("expected error closing account with non-zero balance")
 	}

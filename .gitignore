@@ -1,6 +1,6 @@
 # Binaries and Executables
 # Go binaries compiled in place
-**/cmd/server/server
+
 *.exe
 *.exe~
 *.dll
