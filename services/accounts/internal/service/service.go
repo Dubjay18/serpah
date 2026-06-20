@@ -37,6 +37,9 @@ type EventPublisher interface {
 	Publish(ctx context.Context, routingKey string, payload any) error
 }
 
+// ErrAccountHasBalance is returned when attempting to close an account with a non-zero balance.
+var ErrAccountHasBalance = apperrors.New(apperrors.CodeInvalidInput, "cannot close account with non-zero balance")
+
 // AccountsService holds business logic for the accounts domain.
 type AccountsService struct {
 	repo      AccountRepository
@@ -68,6 +71,14 @@ func (s *AccountsService) CreateAccount(
 	accountType repository.AccountType,
 	currency money.Currency,
 ) (*repository.Account, error) {
+	if ownerID == "" {
+		return nil, apperrors.New(apperrors.CodeInvalidInput, "owner ID is required")
+	}
+
+	if err := accountType.Validate(); err != nil {
+		return nil, apperrors.New(apperrors.CodeInvalidInput, err.Error())
+	}
+
 	if err := currency.Validate(); err != nil {
 		return nil, apperrors.New(apperrors.CodeInvalidInput, fmt.Sprintf("invalid currency: %v", err))
 	}
@@ -174,7 +185,7 @@ func (s *AccountsService) CloseAccount(ctx context.Context, accountID string, ca
 		return fmt.Errorf("accounts: get balance: %w", err)
 	}
 	if balance.Amount != 0 {
-		return apperrors.New(apperrors.CodeInvalidInput, "cannot close account with non-zero balance")
+		return ErrAccountHasBalance
 	}
 
 	err = s.repo.ChangeAccountStatus(ctx, accountID, repository.AccountStatusClosed)

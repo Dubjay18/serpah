@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Dubjay18/seraph/shared/money"
@@ -20,6 +21,16 @@ const (
 	AccountTypeSavings  AccountType = "SAVINGS"
 	AccountTypeFloat    AccountType = "FLOAT"
 )
+
+// Validate returns an error if the account type is not supported.
+func (a AccountType) Validate() error {
+	switch a {
+	case AccountTypeChecking, AccountTypeSavings, AccountTypeFloat:
+		return nil
+	default:
+		return fmt.Errorf("invalid account type %q: must be CHECKING, SAVINGS, or FLOAT", a)
+	}
+}
 
 type Account struct {
 	ID            string         `json:"id" db:"id"`

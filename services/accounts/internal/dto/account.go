@@ -13,7 +13,6 @@ import (
 	"github.com/Dubjay18/seraph/shared/types"
 )
 
-// ─── Request types ────────────────────────────────────────────────────────────
 
 // CreateAccountRequest is the body accepted by POST /accounts.
 // The owner_id is NOT included here — it is sourced from the JWT subject
@@ -45,7 +44,6 @@ func (r *CreateAccountRequest) Validate() error {
 	return nil
 }
 
-// ─── Response types ───────────────────────────────────────────────────────────
 
 // AccountResponse is the standard account representation returned by the API.
 // The Balance field is populated only on the detail endpoint (GET /accounts/:id).

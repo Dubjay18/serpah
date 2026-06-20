@@ -270,11 +270,45 @@ func TestCloseAccount_NonZeroBalanceRejected(t *testing.T) {
 		t.Fatal("expected error closing account with non-zero balance")
 	}
 
-	if !apperrors.IsCode(err, apperrors.CodeInvalidInput) {
-		t.Errorf("expected CodeInvalidInput, got: %v", err)
+	if !errors.Is(err, service.ErrAccountHasBalance) {
+		t.Errorf("expected ErrAccountHasBalance error, got: %v", err)
 	}
 
 	if len(repo.statusCalls) != 0 {
 		t.Errorf("expected no ChangeAccountStatus calls")
+	}
+}
+
+func TestCreateAccount_InvalidAccountTypeRejected(t *testing.T) {
+	repo := &mockRepo{}
+	val := &mockValidator{exists: true}
+	ledger := &mockLedger{}
+	pub := &mockPublisher{}
+	svc := service.New(repo, val, ledger, pub)
+
+	_, err := svc.CreateAccount(context.Background(), "user-123", "INVALID_TYPE", money.USD)
+	if err == nil {
+		t.Fatal("expected error for invalid account type")
+	}
+
+	if !apperrors.IsCode(err, apperrors.CodeInvalidInput) {
+		t.Errorf("expected INVALID_INPUT error, got: %v", err)
+	}
+}
+
+func TestCreateAccount_MissingOwnerIDRejected(t *testing.T) {
+	repo := &mockRepo{}
+	val := &mockValidator{exists: true}
+	ledger := &mockLedger{}
+	pub := &mockPublisher{}
+	svc := service.New(repo, val, ledger, pub)
+
+	_, err := svc.CreateAccount(context.Background(), "", repository.AccountTypeChecking, money.USD)
+	if err == nil {
+		t.Fatal("expected error for missing owner ID")
+	}
+
+	if !apperrors.IsCode(err, apperrors.CodeInvalidInput) {
+		t.Errorf("expected INVALID_INPUT error, got: %v", err)
 	}
 }

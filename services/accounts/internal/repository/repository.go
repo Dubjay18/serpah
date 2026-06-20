@@ -183,7 +183,7 @@ func (r *Repository) ChangeAccountStatus(ctx context.Context, accountID string, 
 	return nil
 }
 
-// ─── Cursor helpers ───────────────────────────────────────────────────────────
+
 
 // EncodeCursor encodes a (createdAt, id) pair into an opaque base64 cursor string.
 func EncodeCursor(createdAt time.Time, id string) string {
